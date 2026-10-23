@@ -1,0 +1,380 @@
+{
+  "info": {
+    "name": "FNRIC Weather Models API",
+    "description": "Fruit & Nut Research & Information Center weather/chill API plus forecast sources. Public, no key.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://f5dby14cj5.execute-api.us-west-2.amazonaws.com/prod"
+    },
+    {
+      "key": "station_id",
+      "value": "CIMIS-6"
+    },
+    {
+      "key": "chill_year",
+      "value": "2025-2026"
+    },
+    {
+      "key": "bloom_date",
+      "value": "2026-02-20"
+    },
+    {
+      "key": "wildeye_id",
+      "value": "Wildeye-111090"
+    },
+    {
+      "key": "lat",
+      "value": "38.5357"
+    },
+    {
+      "key": "lon",
+      "value": "-121.776"
+    }
+  ],
+  "item": [
+    {
+      "name": "FNRIC",
+      "item": [
+        {
+          "name": "Stations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/stations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "stations"
+              ],
+              "query": []
+            },
+            "description": "All 303 stations. Lat/lon are strings; use the number after the slash."
+          }
+        },
+        {
+          "name": "Chill models (one season)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/chill-models?station-id={{station_id}}&chill-year={{chill_year}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "chill-models"
+              ],
+              "query": [
+                {
+                  "key": "station-id",
+                  "value": "{{station_id}}"
+                },
+                {
+                  "key": "chill-year",
+                  "value": "{{chill_year}}"
+                }
+              ]
+            },
+            "description": "Daily chill values. chill-year must be two-year form (2025-2026). Unsorted; daily amounts, not cumulative."
+          }
+        },
+        {
+          "name": "Chill models download (full history CSV)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/chill-models-download?station-id={{station_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "chill-models-download"
+              ],
+              "query": [
+                {
+                  "key": "station-id",
+                  "value": "{{station_id}}"
+                }
+              ]
+            },
+            "description": "CSV of every season's daily chill for the station."
+          }
+        },
+        {
+          "name": "Latest 300 hourly readings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/stemwater?station-id={{station_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "stemwater"
+              ],
+              "query": [
+                {
+                  "key": "station-id",
+                  "value": "{{station_id}}"
+                }
+              ]
+            },
+            "description": "Hourly air temp (°F), RH, vapor pressure, Dynamic model state."
+          }
+        },
+        {
+          "name": "Pistachio (GDH + Utah)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/pistachio?station-id={{station_id}}&chill-year={{chill_year}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pistachio"
+              ],
+              "query": [
+                {
+                  "key": "station-id",
+                  "value": "{{station_id}}"
+                },
+                {
+                  "key": "chill-year",
+                  "value": "{{chill_year}}"
+                }
+              ]
+            },
+            "description": "Daily growing degree hours (Richardson) and Utah units."
+          }
+        },
+        {
+          "name": "Almond hull split GDD (90 days from bloom)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/almond-hull-split-gdd90?station-id={{station_id}}&fbd={{bloom_date}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "almond-hull-split-gdd90"
+              ],
+              "query": [
+                {
+                  "key": "station-id",
+                  "value": "{{station_id}}"
+                },
+                {
+                  "key": "fbd",
+                  "value": "{{bloom_date}}"
+                }
+              ]
+            },
+            "description": "Single-sine GDD, °C, thresholds 5/35."
+          }
+        },
+        {
+          "name": "Peach harvest GDH (30 days from bloom)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/peach-harvest-gdh30?station-id={{station_id}}&fbd={{bloom_date}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "peach-harvest-gdh30"
+              ],
+              "query": [
+                {
+                  "key": "station-id",
+                  "value": "{{station_id}}"
+                },
+                {
+                  "key": "fbd",
+                  "value": "{{bloom_date}}"
+                }
+              ]
+            },
+            "description": "Growing degree hours (Anderson)."
+          }
+        },
+        {
+          "name": "Wildeye raw data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/wildeye?siteID={{wildeye_id}}&startDate=2026-10-01&endDate=2026-10-21&variables=all&format=json",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "wildeye"
+              ],
+              "query": [
+                {
+                  "key": "siteID",
+                  "value": "{{wildeye_id}}"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-10-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-10-21"
+                },
+                {
+                  "key": "variables",
+                  "value": "all"
+                },
+                {
+                  "key": "format",
+                  "value": "json"
+                }
+              ]
+            },
+            "description": "302 redirect to a presigned S3 file (5 min). Wildeye stations only. format: csv_wide | csv_long | json."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Forecast & historical sources",
+      "item": [
+        {
+          "name": "Open-Meteo 16-day hourly forecast (°F)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://api.open-meteo.com/v1/forecast?latitude={{lat}}&longitude={{lon}}&hourly=temperature_2m&temperature_unit=fahrenheit&past_days=7&forecast_days=16&timezone=America/Los_Angeles",
+              "host": [
+                "https://api.open-meteo.com"
+              ],
+              "path": [
+                "v1",
+                "forecast"
+              ],
+              "query": [
+                {
+                  "key": "latitude",
+                  "value": "{{lat}}"
+                },
+                {
+                  "key": "longitude",
+                  "value": "{{lon}}"
+                },
+                {
+                  "key": "hourly",
+                  "value": "temperature_2m"
+                },
+                {
+                  "key": "temperature_unit",
+                  "value": "fahrenheit"
+                },
+                {
+                  "key": "past_days",
+                  "value": "7"
+                },
+                {
+                  "key": "forecast_days",
+                  "value": "16"
+                },
+                {
+                  "key": "timezone",
+                  "value": "America/Los_Angeles"
+                }
+              ]
+            },
+            "description": "384 hourly temps, no key."
+          }
+        },
+        {
+          "name": "Open-Meteo historical hourly (°F)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://archive-api.open-meteo.com/v1/archive?latitude={{lat}}&longitude={{lon}}&start_date=2025-09-01&end_date=2025-09-30&hourly=temperature_2m&temperature_unit=fahrenheit&timezone=America/Los_Angeles",
+              "host": [
+                "https://archive-api.open-meteo.com"
+              ],
+              "path": [
+                "v1",
+                "archive"
+              ],
+              "query": [
+                {
+                  "key": "latitude",
+                  "value": "{{lat}}"
+                },
+                {
+                  "key": "longitude",
+                  "value": "{{lon}}"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2025-09-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2025-09-30"
+                },
+                {
+                  "key": "hourly",
+                  "value": "temperature_2m"
+                },
+                {
+                  "key": "temperature_unit",
+                  "value": "fahrenheit"
+                },
+                {
+                  "key": "timezone",
+                  "value": "America/Los_Angeles"
+                }
+              ]
+            },
+            "description": "Past hourly temps for any point."
+          }
+        },
+        {
+          "name": "NWS points lookup",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "User-Agent",
+                "value": "fnric-hackathon (you@example.com)"
+              }
+            ],
+            "url": {
+              "raw": "https://api.weather.gov/points/{{lat}},{{lon}}",
+              "host": [
+                "https://api.weather.gov"
+              ],
+              "path": [
+                "points",
+                "{{lat}},{{lon}}"
+              ],
+              "query": []
+            },
+            "description": "Response properties.forecastHourly is the hourly forecast URL (~156 hours)."
+          }
+        }
+      ]
+    }
+  ]
+}

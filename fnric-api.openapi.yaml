@@ -1,0 +1,255 @@
+openapi: 3.0.3
+info:
+  title: FNRIC Weather Models API
+  version: "2026-10-22"
+  description: |
+    Public, keyless API behind the Fruit & Nut Research & Information Center
+    (fruitsandnuts.ucdavis.edu) weather model pages. Serves CIMIS and Wildeye
+    (CPRB) station data and the chill / heat models computed from it.
+    Data refreshes from CIMIS every 3 hours. CORS allows any origin.
+
+    Import into Postman, Insomnia, Bruno, or Hoppscotch as an OpenAPI 3 file.
+servers:
+  - url: https://f5dby14cj5.execute-api.us-west-2.amazonaws.com/prod
+    description: Production
+
+tags:
+  - name: Stations
+  - name: Chill models
+  - name: Heat models (GDD / GDH)
+  - name: Raw data
+
+components:
+  parameters:
+    StationId:
+      name: station-id
+      in: query
+      required: true
+      description: Station ID, e.g. CIMIS-6 (Davis) or Wildeye-111090. List from /stations.
+      schema: { type: string, example: CIMIS-6 }
+    ChillYear:
+      name: chill-year
+      in: query
+      required: true
+      description: |
+        Two-year season label, Sept 1 to Aug 31, e.g. 2025-2026.
+        A single year like 2025 returns an empty array with status 200.
+      schema: { type: string, pattern: '^\d{4}-\d{4}$', example: 2025-2026 }
+    FullBloomDate:
+      name: fbd
+      in: query
+      required: true
+      description: Full bloom date (YYYY-MM-DD).
+      schema: { type: string, format: date, example: '2026-02-20' }
+  schemas:
+    Station:
+      type: object
+      properties:
+        StationID: { type: string, example: CIMIS-2 }
+        Name: { type: string, example: FivePoints }
+        County: { type: string, example: Fresno, description: Empty for Wildeye stations }
+        ConnectDate: { type: string, example: '1982-06-07 00:00:00' }
+        IsActive: { type: boolean }
+        HmsLatitude: { type: string, example: "36º20'10N / 36.336222", description: Decimal degrees after the slash }
+        HmsLongitude: { type: string, example: "-120º6'46W / -120.112910" }
+    ChillDay:
+      type: object
+      description: One day's chill amounts (not cumulative). Array is unsorted.
+      properties:
+        Date: { type: string, format: date }
+        hours_lt_45: { type: number, description: Hours at or below 45°F }
+        hours_32_45: { type: number, description: Hours above 32°F and at or below 45°F }
+        units_utah: { type: number, description: Utah chill units (warm hours subtract) }
+        portions_dynamic: { type: number, description: Dynamic model chill portions }
+        n_hours: { type: number, description: Hours of station data that day (24 = complete) }
+    HourlyReading:
+      type: object
+      properties:
+        StationID: { type: string }
+        Timestamp: { type: string, example: '2026-10-20 08:00:00' }
+        ChillYear: { type: string, example: 2026-2027 }
+        HlyAirTmp_Value: { type: number, description: Air temperature °F }
+        HlyAirTmp_Qc: { type: string, description: CIMIS QC flag }
+        HlyRelHum_Value: { type: number, description: Relative humidity % }
+        HlyVapPres_Value: { type: number, description: Vapor pressure (kPa) }
+        portions_dynamic: { type: number }
+        dynmod_inter_e: { type: number, description: Dynamic model intermediate state }
+        dynmod_xi: { type: number, description: Dynamic model state }
+
+paths:
+  /stations:
+    get:
+      tags: [Stations]
+      summary: List all stations (303; 277 CIMIS + 26 Wildeye)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stations: { type: array, items: { $ref: '#/components/schemas/Station' } }
+
+  /chill-models:
+    get:
+      tags: [Chill models]
+      summary: Daily chill values for one station and one season
+      parameters:
+        - $ref: '#/components/parameters/StationId'
+        - $ref: '#/components/parameters/ChillYear'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  model_values: { type: array, items: { $ref: '#/components/schemas/ChillDay' } }
+
+  /chill-models-download:
+    get:
+      tags: [Chill models]
+      summary: Full daily chill history for a station, as CSV
+      description: Every season on record (Davis back to 1982). Columns Date, hours_lt_45, hours_32_45, units_utah, portions_dynamic.
+      parameters:
+        - $ref: '#/components/parameters/StationId'
+      responses:
+        '200':
+          description: CSV attachment
+          content:
+            text/csv:
+              schema: { type: string }
+
+  /stemwater:
+    get:
+      tags: [Raw data]
+      summary: Latest 300 hourly readings for a station
+      description: Hourly air temp, RH, vapor pressure, and Dynamic model running state. Used by the stem water potential tool. Unsorted.
+      parameters:
+        - $ref: '#/components/parameters/StationId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hourly_values: { type: array, items: { $ref: '#/components/schemas/HourlyReading' } }
+
+  /stemwater-download:
+    get:
+      tags: [Raw data]
+      summary: Hourly readings download for the stem water potential tool
+      parameters:
+        - $ref: '#/components/parameters/StationId'
+        - name: dates
+          in: query
+          required: false
+          description: Date selection used by the stem water tool (format not yet documented)
+          schema: { type: string }
+      responses:
+        '200': { description: File download }
+
+  /pistachio:
+    get:
+      tags: [Heat models (GDD / GDH)]
+      summary: Daily growing degree hours (Richardson) and Utah units for a season
+      parameters:
+        - $ref: '#/components/parameters/StationId'
+        - $ref: '#/components/parameters/ChillYear'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  model_values:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Date: { type: string, format: date }
+                        grow_degr_hrs_r: { type: number }
+                        units_utah: { type: number }
+
+  /almond-hull-split-gdd90:
+    get:
+      tags: [Heat models (GDD / GDH)]
+      summary: 91 days of single-sine GDD (°C, 5/35 thresholds) from full bloom
+      parameters:
+        - $ref: '#/components/parameters/StationId'
+        - $ref: '#/components/parameters/FullBloomDate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  model_values:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Date: { type: string, format: date }
+                        grow_degr_days_ss: { type: number }
+
+  /peach-harvest-gdh30:
+    get:
+      tags: [Heat models (GDD / GDH)]
+      summary: 31 days of growing degree hours (Anderson) from full bloom
+      parameters:
+        - $ref: '#/components/parameters/StationId'
+        - $ref: '#/components/parameters/FullBloomDate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  model_values:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Date: { type: string, format: date }
+                        grow_degr_hrs_a: { type: number }
+
+  /wildeye:
+    get:
+      tags: [Raw data]
+      summary: Raw Wildeye (CPRB in-orchard) station data file
+      description: Responds 302 with a presigned S3 URL valid for 5 minutes. Wildeye stations only.
+      parameters:
+        - name: siteID
+          in: query
+          required: true
+          schema: { type: string, example: Wildeye-111090 }
+        - name: startDate
+          in: query
+          required: true
+          schema: { type: string, format: date, example: '2026-10-01' }
+        - name: endDate
+          in: query
+          required: true
+          schema: { type: string, format: date, example: '2026-10-21' }
+        - name: variables
+          in: query
+          required: false
+          description: Comma-separated variable names (e.g. air_temperature,relative_humidity) or "all"
+          schema: { type: string, default: all }
+        - name: format
+          in: query
+          required: true
+          schema: { type: string, enum: [csv_wide, csv_long, json] }
+      responses:
+        '302': { description: Redirect to the generated file }
+        '404': { description: Data not found }
